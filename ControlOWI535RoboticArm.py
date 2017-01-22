@@ -2,7 +2,7 @@
 # Description:
 # Sample code to control OWI-535 Robotic Arm Edge with its OWI-535-USB USB Interface
 #   using python
-# GitHub: https://github.com/flaviomauro/Adafruit_Feather_Ultrasound_Distance_HCSR04
+# GitHub: https://github.com/flaviomauro/OWI-535-Robotic-Arm-with-Python
 # *******************************************************************************
 # Item list:
 #
