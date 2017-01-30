@@ -126,8 +126,8 @@ def main(argv):
         raw_movements = [w.replace('LED_ON', '[0, 0, 1]') for w in raw_movements]
         raw_movements = [w.replace('LED_OFF', '[0, 0, 0]') for w in raw_movements]
     except:
-        print 'ControlOWI535RoboticArm.py --d =<duration array> --m=<movements array>'
-        print 'ControlOWI535RoboticArm.py --d[1]" --m=[M1_CLOSE]'
+        print 'ControlOWI535RoboticArm.py --d=<duration array> --m=<movements array>'
+        print 'ControlOWI535RoboticArm.py --d=1 --m=M1_CLOSE'
         print 'ControlOWI535RoboticArm.py --d=1-2-1-3-2 --m=M1_CLOSE-M2_UP-M3_UP-M4_BACK-M5_CLOCKWISE'
         print sys.exc_info()[0]
         raise
