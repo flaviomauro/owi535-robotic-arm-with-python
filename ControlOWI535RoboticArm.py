@@ -16,10 +16,14 @@
 #   - Windows: libusb-win32 - https://sourceforge.net/projects/libusb-win32/
 # *******************************************************************************
 # @author: Flavio H. C. Mauro
-# @date:   22-Jan-2017
+# @date:   29-Jan-2017
+# @version: 1.1
 # LinkedIn: https://br.linkedin.com/in/flaviomauro
 # *******************************************************************************
 
+
+import sys
+import argparse
 import usb
 import usb.core
 import usb.util
@@ -50,45 +54,86 @@ LED_OFF = [0, 0, 0]
 
 
 # Define a procedure to prepare the movement and/or LED command so we can deal with multiple motors at the same time
-def get_arm_command(movements):
-    result = [0, 0, 0]
+def get_arm_command(unique_durations, raw_durations, raw_commands):
 
-    for movement in movements:
-        for i in xrange(len(result)):
-            result[i] = result[i] + movement[i]
-    print "Arm command: "
-    print result
+    result = [[None for y in range(2)] for x in range(len(unique_durations))]
+
+    for i, udVal in enumerate(unique_durations):
+        result[i][0] = udVal
+        result[i][1] = [0, 0, 0]
+
+    for i, udVal in enumerate(unique_durations):
+        for j, rdVal in enumerate(raw_durations):
+            if udVal == rdVal:
+                for z, item in enumerate(result[i][1]):
+                    raw_commands[j] = raw_commands[j].replace('[', '')
+                    raw_commands[j] = raw_commands[j].replace(']', '')
+                    result[i][1][z] = result[i][1][z] + map(int, raw_commands[j].split(','))[z]
     return result
 
 
+def get_unique_durations(raw_duration):
+    duration_set = set(raw_duration)
+    duration = list(duration_set)
+
+    return duration
+
+
 # Define a procedure to execute the movement and/or LED command
-def move_arm(duration, arm_command):
-    # Start moving the arm or switch the led
-    robotArm.ctrl_transfer(0x40, 6, 0x100, 0, arm_command, 3)
+def move_arm(raw_durations, raw_commands):
 
-    # Stop moving the arm or switch the led after waiting a specified ammount of time
-    time.sleep(duration)
-    arm_command = [0, 0, 0]
-    robotArm.ctrl_transfer(0x40, 6, 0x100, 0, arm_command, 3)
+    if len(raw_durations) != len(raw_commands):
+        print 'Please provide the same number of items for durations and movements arrays.'
+        print 'duration array length: ' + str(len(raw_durations))
+        print 'duration array items: ' + str(raw_durations)
+        print 'movements array length: ' + str(len(raw_commands))
+        print 'movements array items: ' + str(raw_commands)
+    else:
 
+        unique_durations = get_unique_durations(raw_durations)
+        arm_commands = get_arm_command(unique_durations, raw_durations, raw_commands)
 
-# Define a procedure to test the arm movements and led, both single and multiple movements
-def test_arm():
+        for arm_command in arm_commands:
+            # Start moving the arm or switch the led
+            robotArm.ctrl_transfer(0x40, 6, 0x100, 0, arm_command[1], 3)
+            time.sleep(arm_command[0])
 
-    # Test each movement and LED light
-    movement_list = [M1_OPEN, M1_CLOSE, M2_UP, M2_DOWN, M3_UP, M3_DOWN, M4_BACK, M4_FORWARD, M5_CLOCKWISE,
-                     M5_ANTI_CLOCKWISE, LED_ON, LED_OFF]
-    for movement in movement_list:
-        move_arm(1, movement)
-        time.sleep(1)
-
-    # Test Multiple movements and LED light
-    move_arm(1, get_arm_command([M1_OPEN, M2_DOWN, M3_DOWN, M4_FORWARD, M5_ANTI_CLOCKWISE, LED_ON]))
-    time.sleep(1)
-
-    # Test Multiple movements and LED light
-    move_arm(1, get_arm_command([M1_CLOSE, M2_UP, M3_UP, M4_BACK, M5_CLOCKWISE, LED_OFF]))
-    time.sleep(1)
+            # Stop moving the arm
+            robotArm.ctrl_transfer(0x40, 6, 0x100, 0, [0, 0, 0], 3)
 
 
-test_arm()
+def main(argv):
+    try:
+        parser = argparse.ArgumentParser()
+        parser.add_argument('--d', type=str)
+        parser.add_argument('--m', type=str)
+        args = parser.parse_args()
+
+        durations = args.d.split('-')
+        durations = map(int, durations)
+
+        raw_movements = args.m.split('-')
+        raw_movements = [w.replace('M1_CLOSE', '[1, 0, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M1_OPEN', '[2, 0, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M2_UP', '[4, 0, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M2_DOWN', '[8, 0, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M3_UP', '[16, 0, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M3_DOWN', '[32, 0, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M4_BACK', '[64, 0, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M4_FORWARD', '[128, 0, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M5_CLOCKWISE', '[0, 2, 0]') for w in raw_movements]
+        raw_movements = [w.replace('M5_ANTI_CLOCKWISE', '[0, 1, 0]') for w in raw_movements]
+        raw_movements = [w.replace('LED_ON', '[0, 0, 1]') for w in raw_movements]
+        raw_movements = [w.replace('LED_OFF', '[0, 0, 0]') for w in raw_movements]
+    except:
+        print 'ControlOWI535RoboticArm.py --d =<duration array> --m=<movements array>'
+        print 'ControlOWI535RoboticArm.py --d[1]" --m=[M1_CLOSE]'
+        print 'ControlOWI535RoboticArm.py --d=1-2-1-3-2 --m=M1_CLOSE-M2_UP-M3_UP-M4_BACK-M5_CLOCKWISE'
+        print sys.exc_info()[0]
+        raise
+
+    move_arm(durations, raw_movements)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
