@@ -1,9 +1,9 @@
-# OWI-535-Robotic-Arm-with-Python
+# owi535-robotic-arm-with-python
 *******************************************************************************<br />
 Description:<br />
 Sample code to control OWI-535 Robotic Arm Edge with its OWI-535-USB USB Interface<br />
   using python<br />
-GitHub: https://github.com/flaviomauro/OWI-535-Robotic-Arm-with-Python<br />
+GitHub: https://github.com/flaviomauro/owi535-robotic-arm-with-python<br />
 *******************************************************************************<br />
 
 Item list:
